@@ -1,0 +1,69 @@
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:provider/provider.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'screens/landing_screen.dart';
+import 'screens/login_screen.dart';
+import 'screens/admin/admin_dashboard.dart';
+import 'controllers/auth_controller.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  await initializeDateFormatting('es', null);
+  
+  await Supabase.initialize(
+    url: 'https://ynigfdldjybizqysmnaf.supabase.co',
+    anonKey: 'sb_publishable_1mSd8fQ2pRbUyKAjHqZzEw_pmstxGZ1',
+  );
+
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthController()),
+      ],
+      child: const PrimeDeskApp(),
+    ),
+  );
+}
+
+class PrimeDeskApp extends StatelessWidget {
+  const PrimeDeskApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'PrimeDesk - Rafa Motos',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF0F1113),
+        primaryColor: const Color(0xFFFF6B00),
+        secondaryHeaderColor: const Color(0xFF00B2FF),
+        colorScheme: const ColorScheme.dark(
+          primary: Color(0xFFFF6B00),
+          secondary: Color(0xFF00B2FF),
+          surface: Color(0xFF1E2124),
+        ),
+        textTheme: const TextTheme(
+          displayLarge: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+          titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white70),
+        ),
+        cardTheme: CardThemeData(
+          color: const Color(0xFF1E2124),
+          elevation: 8,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        useMaterial3: true,
+      ),
+      home: Supabase.instance.client.auth.currentSession == null
+          ? const LandingScreen()
+          : const AdminDashboard(),
+      routes: {
+        '/landing': (context) => const LandingScreen(),
+        '/login': (context) => const LoginScreen(),
+        '/admin_dashboard': (context) => const AdminDashboard(),
+      },
+    );
+  }
+}
