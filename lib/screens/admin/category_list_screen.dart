@@ -57,7 +57,136 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
       try {
         await _supabase.from('categorias_productos').delete().eq('id_categoria', id);
         _fetchCategories();
-      } catch (e) {}
+      } catch (e) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+      }
+    }
+  }
+
+  void _showCategoryDetails(dynamic c) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF131518),
+        title: const Text('Detalles de la Categoría', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Nombre', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                    Text(c['nombre'] ?? 'Sin Nombre', style: const TextStyle(color: Colors.white, fontSize: 14)),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Estado', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(color: (c['estado'] == true ? Colors.greenAccent : Colors.redAccent).withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
+                      child: Text(c['estado'] == true ? 'Activo' : 'Inactivo', style: TextStyle(color: c['estado'] == true ? Colors.greenAccent : Colors.redAccent, fontSize: 10, fontWeight: FontWeight.bold)),
+                    )
+                  ],
+                )
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Text('Descripción', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: const Color(0xFF1E2124), borderRadius: BorderRadius.circular(8)),
+              child: Text(c['descripcion'] ?? 'Sin descripción...', style: const TextStyle(color: Colors.white70)),
+            )
+          ],
+        ),
+        actions: [
+          IconButton(icon: const Icon(LucideIcons.x, color: Colors.white54), onPressed: () => Navigator.pop(ctx)),
+        ],
+      )
+    );
+  }
+
+  Future<void> _showCategoryDialog({dynamic categoryToEdit}) async {
+    final nombreController = TextEditingController(text: categoryToEdit?['nombre'] ?? '');
+    final descController = TextEditingController(text: categoryToEdit?['descripcion'] ?? '');
+    
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF131518),
+        title: Text(categoryToEdit == null ? 'Nueva Categoría' : 'Editar Categoría', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Nombre *', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              TextField(
+                controller: nombreController,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: const Color(0xFF1E2124),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text('Descripción *', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              TextField(
+                controller: descController,
+                style: const TextStyle(color: Colors.white),
+                maxLines: 4,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: const Color(0xFF1E2124),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () async {
+               if (nombreController.text.isEmpty) return;
+               try {
+                  if (categoryToEdit == null) {
+                    await _supabase.from('categorias_productos').insert({
+                      'nombre': nombreController.text,
+                      'descripcion': descController.text,
+                      'estado': true
+                    });
+                  } else {
+                     await _supabase.from('categorias_productos').update({
+                      'nombre': nombreController.text,
+                      'descripcion': descController.text,
+                    }).eq('id_categoria', categoryToEdit['id_categoria']);
+                  }
+                  if (ctx.mounted) Navigator.pop(ctx, true);
+               } catch (e) {
+                  if (ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+               }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2E65F3), foregroundColor: Colors.white),
+            child: Text(categoryToEdit == null ? 'Crear Categoría' : 'Actualizar'),
+          )
+        ],
+      )
+    );
+
+    if (result == true) {
+      _fetchCategories();
     }
   }
 
@@ -78,9 +207,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFFFF6B00),
         child: const Icon(LucideIcons.plus, color: Colors.white),
-        onPressed: () {
-          // Navegar a formulario de nueva categoría
-        },
+        onPressed: () => _showCategoryDialog(),
       ),
     );
   }
@@ -124,8 +251,8 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              _actionIcon(LucideIcons.eye, Colors.blueAccent, () {}),
-              _actionIcon(LucideIcons.edit3, Colors.blueAccent, () {}),
+              _actionIcon(LucideIcons.eye, const Color(0xFF2E65F3), () => _showCategoryDetails(c)),
+              _actionIcon(LucideIcons.edit2, Colors.greenAccent, () => _showCategoryDialog(categoryToEdit: c)),
               _actionIcon(LucideIcons.trash2, Colors.redAccent, () => _deleteCategory(c['id_categoria'])),
             ],
           ),

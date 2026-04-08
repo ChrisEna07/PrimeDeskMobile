@@ -53,13 +53,20 @@ class _SupplierListScreenState extends State<SupplierListScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1E2124),
-        title: const Text('¿Eliminar Proveedor?', style: TextStyle(color: Colors.white)),
-        content: const Text('Esta acción no se puede deshacer.', style: TextStyle(color: Colors.white60)),
+        title: const Row(
+          children: [
+            Icon(LucideIcons.trash2, color: Colors.redAccent),
+            SizedBox(width: 8),
+            Text('Eliminar Proveedor', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ]
+        ),
+        content: const Text('¿Confirmar eliminación?', style: TextStyle(color: Colors.white60)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
-          TextButton(
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar', style: TextStyle(color: Colors.white60))),
+          ElevatedButton(
             onPressed: () => Navigator.pop(context, true), 
-            child: const Text('Eliminar', style: TextStyle(color: Colors.redAccent)),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            child: const Text('Eliminar', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -70,9 +77,193 @@ class _SupplierListScreenState extends State<SupplierListScreen> {
         await _supabase.from('proveedores').delete().eq('id_proveedor', id);
         _fetchProveedores();
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
+  }
+
+  void _showSupplierDetails(dynamic s) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF131518),
+        title: const Text('Detalles del Proveedor', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: SizedBox(
+          width: 500,
+          child: SingleChildScrollView(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Información General', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 12),
+                      const Text('Nombre', style: TextStyle(color: Color(0xFF00B2FF), fontSize: 12)),
+                      Text(s['nombreempresa'] ?? 'N/A', style: const TextStyle(color: Colors.white, fontSize: 14)),
+                      const SizedBox(height: 8),
+                      const Text('NIT', style: TextStyle(color: Color(0xFF00B2FF), fontSize: 12)),
+                      Text(s['nit'] ?? 'N/A', style: const TextStyle(color: Colors.white, fontSize: 14)),
+                      const SizedBox(height: 8),
+                      const Text('Especialidad', style: TextStyle(color: Color(0xFF00B2FF), fontSize: 12)),
+                      Text(s['especialidad'] ?? 'N/A', style: const TextStyle(color: Colors.white, fontSize: 14)),
+                      const SizedBox(height: 16),
+                      const Text('Estado', style: TextStyle(color: Color(0xFF00B2FF), fontSize: 12)),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(color: (s['estado'] == true ? Colors.greenAccent : Colors.redAccent).withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
+                        child: Text(s['estado'] == true ? 'Activo' : 'Inactivo', style: TextStyle(color: s['estado'] == true ? Colors.greenAccent : Colors.redAccent, fontSize: 10, fontWeight: FontWeight.bold)),
+                      )
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Contacto', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 12),
+                      const Text('Persona', style: TextStyle(color: Color(0xFF00B2FF), fontSize: 12)),
+                      Text(s['personacontacto'] ?? 'N/A', style: const TextStyle(color: Colors.white, fontSize: 14)),
+                      const SizedBox(height: 8),
+                      const Text('Teléfono', style: TextStyle(color: Color(0xFF00B2FF), fontSize: 12)),
+                      Text(s['telefono'] ?? 'N/A', style: const TextStyle(color: Colors.white, fontSize: 14)),
+                      const SizedBox(height: 8),
+                      const Text('Email', style: TextStyle(color: Color(0xFF00B2FF), fontSize: 12)),
+                      Text(s['email'] ?? 'N/A', style: const TextStyle(color: Colors.white, fontSize: 14)),
+                      const SizedBox(height: 8),
+                      const Text('Dirección', style: TextStyle(color: Color(0xFF00B2FF), fontSize: 12)),
+                      Text(s['direccion'] ?? 'N/A', style: const TextStyle(color: Colors.white, fontSize: 14)),
+                    ],
+                  ),
+                )
+              ],
+            ),
+          )
+        ),
+        actions: [
+          IconButton(icon: const Icon(LucideIcons.x, color: Colors.white54), onPressed: () => Navigator.pop(ctx)),
+        ],
+      )
+    );
+  }
+
+  Future<void> _showSupplierDialog({dynamic supplier}) async {
+    final nombreCtrl = TextEditingController(text: supplier?['nombreempresa'] ?? '');
+    final nitCtrl = TextEditingController(text: supplier?['nit'] ?? '');
+    final contactoCtrl = TextEditingController(text: supplier?['personacontacto'] ?? '');
+    final especialidadCtrl = TextEditingController(text: supplier?['especialidad'] ?? '');
+    final telCtrl = TextEditingController(text: supplier?['telefono'] ?? '');
+    final emailCtrl = TextEditingController(text: supplier?['email'] ?? '');
+    final dirCtrl = TextEditingController(text: supplier?['direccion'] ?? '');
+    final ciudadCtrl = TextEditingController(text: supplier?['ciudad'] ?? '');
+    final paisCtrl = TextEditingController(text: supplier?['pais'] ?? '');
+    final webCtrl = TextEditingController(text: supplier?['sitioweb'] ?? '');
+    final notasCtrl = TextEditingController(text: supplier?['notas'] ?? '');
+
+    Widget buildInput(String label, TextEditingController ctrl, {int lines = 1}) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: ctrl,
+              style: const TextStyle(color: Colors.white),
+              maxLines: lines,
+              decoration: InputDecoration(filled: true, fillColor: const Color(0xFF1E2124), border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none)),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF131518),
+        title: Text(supplier == null ? 'Nuevo Proveedor' : 'Editar Proveedor', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: SizedBox(
+          width: 500,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Expanded(child: buildInput('Nombre *', nombreCtrl)),
+                    const SizedBox(width: 16),
+                    Expanded(child: buildInput('NIT (Opcional)', nitCtrl)),
+                  ],
+                ),
+                Row(
+                  children: [
+                    Expanded(child: buildInput('Contacto *', contactoCtrl)),
+                    const SizedBox(width: 16),
+                    Expanded(child: buildInput('Especialidad (Opcional)', especialidadCtrl)),
+                  ],
+                ),
+                Row(
+                  children: [
+                    Expanded(child: buildInput('Teléfono *', telCtrl)),
+                    const SizedBox(width: 16),
+                    Expanded(child: buildInput('Email *', emailCtrl)),
+                  ],
+                ),
+                buildInput('Dirección *', dirCtrl),
+                Row(
+                  children: [
+                    Expanded(child: buildInput('Ciudad *', ciudadCtrl)),
+                    const SizedBox(width: 16),
+                    Expanded(child: buildInput('País *', paisCtrl)),
+                  ],
+                ),
+                buildInput('Sitio Web (Opcional)', webCtrl),
+                buildInput('Notas', notasCtrl, lines: 3),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar', style: TextStyle(color: Colors.white54))),
+          ElevatedButton(
+            onPressed: () async {
+              if (nombreCtrl.text.isEmpty) return;
+              try {
+                final payload = {
+                  'nombreempresa': nombreCtrl.text,
+                  'nit': nitCtrl.text,
+                  'personacontacto': contactoCtrl.text,
+                  'especialidad': especialidadCtrl.text,
+                  'telefono': telCtrl.text,
+                  'email': emailCtrl.text,
+                  'direccion': dirCtrl.text,
+                  'ciudad': ciudadCtrl.text,
+                  'pais': paisCtrl.text,
+                  'sitioweb': webCtrl.text,
+                  'notas': notasCtrl.text,
+                  'estado': supplier?['estado'] ?? true,
+                };
+                if (supplier == null) {
+                  await _supabase.from('proveedores').insert(payload);
+                } else {
+                  await _supabase.from('proveedores').update(payload).eq('id_proveedor', supplier['id_proveedor']);
+                }
+                if (ctx.mounted) Navigator.pop(ctx, true);
+              } catch (e) {
+                if (ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2E65F3)),
+            child: Text(supplier == null ? 'Registrar' : 'Actualizar', style: const TextStyle(color: Colors.white)),
+          )
+        ],
+      )
+    );
+    if (result == true) _fetchProveedores();
   }
 
   @override
@@ -102,20 +293,25 @@ class _SupplierListScreenState extends State<SupplierListScreen> {
                     ],
                   ),
                   ElevatedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(LucideIcons.truck, color: Colors.white),
+                    onPressed: () => _showSupplierDialog(),
+                    icon: const Icon(LucideIcons.plus, color: Colors.white),
                     label: const Text('Nuevo Proveedor', style: TextStyle(color: Colors.white)),
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF6B00), padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16)),
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2E65F3), padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16)),
                   ),
                 ],
               ),
             const SizedBox(height: 32),
-            
-            // Grid of Suppliers
             Expanded(child: _isLoading ? const Center(child: CircularProgressIndicator()) : _buildSupplierGrid()),
           ],
         ),
       ),
+      floatingActionButton: ResponsiveLayout.isMobile(context) 
+        ? FloatingActionButton(
+            backgroundColor: const Color(0xFF2E65F3),
+            child: const Icon(LucideIcons.plus, color: Colors.white),
+            onPressed: () => _showSupplierDialog(),
+          )
+        : null,
     );
   }
 
@@ -124,16 +320,25 @@ class _SupplierListScreenState extends State<SupplierListScreen> {
       return const Center(child: Text('No hay proveedores registrados.', style: TextStyle(color: Colors.white30)));
     }
     
-    return GridView.builder(
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: MediaQuery.of(context).size.width > 900 ? 3 : (MediaQuery.of(context).size.width > 600 ? 2 : 1),
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: 2.8,
-      ),
-      itemCount: _proveedores.length,
-      itemBuilder: (context, i) => _buildSupplierCard(_proveedores[i]),
-    );
+    return LayoutBuilder(builder: (context, constraints) {
+      if (constraints.maxWidth <= 800) {
+        return ListView.separated(
+          itemCount: _proveedores.length,
+          separatorBuilder: (ctx, i) => const SizedBox(height: 16),
+          itemBuilder: (ctx, i) => _buildSupplierCard(_proveedores[i]),
+        );
+      }
+      return GridView.builder(
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: constraints.maxWidth > 1200 ? 3 : 2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: 2.2, // increased height allocation dynamically
+        ),
+        itemCount: _proveedores.length,
+        itemBuilder: (context, i) => _buildSupplierCard(_proveedores[i]),
+      );
+    });
   }
 
   Widget _buildSupplierCard(dynamic s) {
@@ -146,13 +351,14 @@ class _SupplierListScreenState extends State<SupplierListScreen> {
         border: Border.all(color: Colors.white.withOpacity(0.05))
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: const Color(0xFFFF6B00).withOpacity(0.1), shape: BoxShape.circle),
-                child: const Icon(LucideIcons.truck, color: Color(0xFFFF6B00), size: 22),
+                decoration: BoxDecoration(color: const Color(0xFF2E65F3).withOpacity(0.1), shape: BoxShape.circle),
+                child: const Icon(LucideIcons.truck, color: Color(0xFF2E65F3), size: 22),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -164,23 +370,49 @@ class _SupplierListScreenState extends State<SupplierListScreen> {
                   ],
                 ),
               ),
-              Switch(
-                value: isActive,
-                onChanged: (val) => _toggleStatus(s['id_proveedor'], isActive),
-                activeColor: const Color(0xFFFF6B00),
-              ),
             ],
           ),
-          const Divider(height: 24, color: Colors.white10),
-          Row(
+          const SizedBox(height: 16),
+          const Divider(height: 1, color: Colors.white10),
+          const SizedBox(height: 12),
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            runSpacing: 12,
             children: [
-              const Icon(LucideIcons.phone, size: 14, color: Colors.white30),
-              const SizedBox(width: 8),
-              Text(s['telefono'] ?? '-', style: const TextStyle(color: Colors.white60, fontSize: 12)),
-              const Spacer(),
-              const Icon(LucideIcons.mail, size: 14, color: Colors.white30),
-              const SizedBox(width: 4),
-              const Text('Email', style: TextStyle(color: Colors.white60, fontSize: 12)),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Switch(
+                    value: isActive,
+                    onChanged: (val) => _toggleStatus(s['id_proveedor'], isActive),
+                    activeColor: const Color(0xFF2E65F3),
+                  ),
+                ]
+              ),
+              Wrap(
+                spacing: 8,
+                children: [
+                  IconButton(
+                    icon: const Icon(LucideIcons.eye, color: Color(0xFF2E65F3), size: 18),
+                    onPressed: () => _showSupplierDetails(s),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  IconButton(
+                    icon: const Icon(LucideIcons.edit2, color: Colors.greenAccent, size: 18),
+                    onPressed: () => _showSupplierDialog(supplier: s),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  IconButton(
+                    icon: const Icon(LucideIcons.trash2, color: Colors.redAccent, size: 18),
+                    onPressed: () => _deleteSupplier(s['id_proveedor']),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
             ],
           ),
         ],

@@ -81,8 +81,9 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFFFF6B00),
         child: const Icon(LucideIcons.plus, color: Colors.white),
-        onPressed: () {
-          // Navegar a formulario de nuevo empleado
+        onPressed: () async {
+          final result = await Navigator.push(context, MaterialPageRoute(builder: (context) => const EmployeeFormScreen()));
+          if (result == true) _fetchEmployees();
         },
       ),
     );
