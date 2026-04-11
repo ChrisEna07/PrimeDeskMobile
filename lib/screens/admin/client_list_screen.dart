@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/utils/hash_helper.dart';
 
 class ClientListScreen extends StatefulWidget {
   const ClientListScreen({super.key});
@@ -358,11 +359,12 @@ class _ClientListScreenState extends State<ClientListScreen> {
                 } else {
                   final tempPassword =
                       'cliente_${DateTime.now().millisecondsSinceEpoch}';
+                  final String hashedPass = HashHelper.hashPassword(tempPassword);
                   final newUser = await _supabase
                       .from('usuarios')
                       .insert({
                         'correo': correoCtrl.text,
-                        'contrasena': tempPassword,
+                        'contrasena': hashedPass,
                         'estado': true,
                         'id_rol': 3
                       })

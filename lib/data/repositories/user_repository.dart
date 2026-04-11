@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/utils/hash_helper.dart';
 
 class UserRepository {
   final _supabase = Supabase.instance.client;
@@ -10,15 +11,16 @@ class UserRepository {
     required Map<String, dynamic> datosPersonales,
   }) async {
     try {
-      // 1. Insertar en la tabla 'Usuarios'
-      // Tu script: ID_Usuario (SERIAL), ID_Rol, Correo, Contrasena, Estado
+      // 1. Hashear la contraseña para coincidir con el sistema Web (React)
+      final String hashedPass = HashHelper.hashPassword(password);
+
+      // 2. Insertar en la tabla 'Usuarios'
       final userResponse = await _supabase
           .from('usuarios')
           .insert({
             'id_rol': idRol,
             'correo': email,
-            'contrasena':
-                password, // Nota: En producción usa auth.signUp de Supabase
+            'contrasena': hashedPass,
             'estado': true,
           })
           .select()

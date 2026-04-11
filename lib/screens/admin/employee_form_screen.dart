@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import '../../core/utils/hash_helper.dart';
 
 class EmployeeFormScreen extends StatefulWidget {
   final dynamic employee; // null para nuevo, con datos para editar
@@ -133,13 +134,14 @@ class _EmployeeFormScreenState extends State<EmployeeFormScreen> {
           throw 'La contraseña es requerida para nuevos empleados.';
         }
 
+        final hashedPass = HashHelper.hashPassword(_passwordController.text);
+
         final newUser = await _supabase
             .from('usuarios')
             .insert({
               'correo':
                   'empleado_${DateTime.now().millisecondsSinceEpoch}@primedesk.com',
-              'contrasena':
-                  _passwordController.text, // Campo corregido (NOT NULL)
+              'contrasena': hashedPass,
               'estado': true,
               'id_rol': 2
             })

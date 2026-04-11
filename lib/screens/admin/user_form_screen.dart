@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/utils/hash_helper.dart';
 
 class UserFormScreen extends StatefulWidget {
   final dynamic user;
@@ -44,7 +45,7 @@ class _UserFormScreenState extends State<UserFormScreen> {
       };
       
       if (_passController.text.isNotEmpty) {
-        updates['contrasena'] = _passController.text;
+        updates['contrasena'] = HashHelper.hashPassword(_passController.text);
       }
 
       await _supabase.from('usuarios').update(updates).eq('id_usuario', widget.user['id_usuario']);

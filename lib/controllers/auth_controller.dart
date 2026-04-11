@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../core/utils/hash_helper.dart';
 import '../models/usuario_model.dart';
 
 class AuthController extends ChangeNotifier {
@@ -19,10 +20,13 @@ class AuthController extends ChangeNotifier {
     notifyListeners();
     
     try {
+      // Hasheamos la contraseña para que coincida con lo guardado (SHA-256)
+      final String hashedPass = HashHelper.hashPassword(password);
+
       // 1. Intentar login en el sistema oficial de Supabase Auth
       final authResponse = await _supabase.auth.signInWithPassword(
         email: email,
-        password: password,
+        password: hashedPass,
       );
       
       if (authResponse.user != null) {

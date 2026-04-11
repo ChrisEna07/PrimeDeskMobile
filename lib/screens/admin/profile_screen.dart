@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/utils/hash_helper.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../controllers/auth_controller.dart';
@@ -176,7 +177,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       // Y sincronizar en 'usuarios'
       if (_userData != null) {
-        await _supabase.from('usuarios').update({'contrasena': _newPasswordController.text}).eq('id_usuario', _userData!['id_usuario']);
+        final hashedPass = HashHelper.hashPassword(_newPasswordController.text);
+        await _supabase.from('usuarios').update({'contrasena': hashedPass}).eq('id_usuario', _userData!['id_usuario']);
       }
 
       _currentPasswordController.clear();
