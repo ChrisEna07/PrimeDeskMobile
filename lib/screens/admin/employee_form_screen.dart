@@ -135,12 +135,16 @@ class _EmployeeFormScreenState extends State<EmployeeFormScreen> {
         }
 
         final hashedPass = HashHelper.hashPassword(_passwordController.text);
+        final email = 'emp_${DateTime.now().millisecondsSinceEpoch}@primedesk.com';
 
+        // 1. Crear en Auth (Plano)
+        await _supabase.auth.signUp(email: email, password: _passwordController.text);
+
+        // 2. Crear en Usuarios (Bcrypt)
         final newUser = await _supabase
             .from('usuarios')
             .insert({
-              'correo':
-                  'empleado_${DateTime.now().millisecondsSinceEpoch}@primedesk.com',
+              'correo': email,
               'contrasena': hashedPass,
               'estado': true,
               'id_rol': 2

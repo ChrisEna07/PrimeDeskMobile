@@ -357,9 +357,13 @@ class _ClientListScreenState extends State<ClientListScreen> {
                       .update(payload)
                       .eq('id_cliente', client['id_cliente']);
                 } else {
-                  final tempPassword =
-                      'cliente_${DateTime.now().millisecondsSinceEpoch}';
+                  final tempPassword = 'cliente_${DateTime.now().millisecondsSinceEpoch}';
                   final String hashedPass = HashHelper.hashPassword(tempPassword);
+                  
+                  // 1. Crear en Auth (Plano)
+                  await _supabase.auth.signUp(email: correoCtrl.text, password: tempPassword);
+
+                  // 2. Crear en Usuarios (Bcrypt)
                   final newUser = await _supabase
                       .from('usuarios')
                       .insert({
