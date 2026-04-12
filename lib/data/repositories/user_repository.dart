@@ -14,7 +14,18 @@ class UserRepository {
       // 1. Hashear la contraseña para coincidir con el sistema Web (React)
       final String hashedPass = HashHelper.hashPassword(password);
 
-      // 2. Insertar en la tabla 'Usuarios'
+      // 2. Crear usuario en Supabase Auth primero
+      // IMPORTANTE: Pasamos la contraseña hasheada para que signIn coincida
+      final authResponse = await _supabase.auth.signUp(
+        email: email,
+        password: hashedPass,
+      );
+
+      if (authResponse.user == null) {
+        throw "No se pudo crear el usuario en el sistema de autenticación.";
+      }
+
+      // 3. Insertar en la tabla pública 'Usuarios' vinculada
       final userResponse = await _supabase
           .from('usuarios')
           .insert({
@@ -28,12 +39,13 @@ class UserRepository {
 
       final int newUserId = userResponse['id_usuario'];
 
-      // 2. Decidir en qué tabla insertar según el Rol
+      // 4. Decidir en qué tabla insertar según el Rol
       // Según tu lógica: Roles 1,2,3 son Staff, Rol 4 es Cliente
-      if (idRol == 4) {
+      // NOTA: Ajustamos según el AuthController que usa idRol 3 para clientes
+      if (idRol == 3 || idRol == 4) {
         await _supabase.from('clientes').insert({
           'id_usuario': newUserId,
-          ...datosPersonales, // Trae Nombre, Apellido, Telefono, etc.
+          ...datosPersonales,
         });
       } else {
         await _supabase.from('empleados').insert({

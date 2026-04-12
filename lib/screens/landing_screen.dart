@@ -75,9 +75,7 @@ class LandingScreen extends StatelessWidget {
                     width: double.infinity,
                     height: 60,
                     child: OutlinedButton(
-                      onPressed: () {
-                        // Navegar a registro (placeholder)
-                      },
+                      onPressed: () => Navigator.pushNamed(context, '/register'),
                       style: OutlinedButton.styleFrom(
                         side: BorderSide(color: Colors.white.withOpacity(0.3), width: 2),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

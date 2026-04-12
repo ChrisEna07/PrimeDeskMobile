@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'screens/landing_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/register_screen.dart';
 import 'screens/admin/admin_dashboard.dart';
 import 'controllers/auth_controller.dart';
 
@@ -62,6 +63,7 @@ class PrimeDeskApp extends StatelessWidget {
       routes: {
         '/landing': (context) => const LandingScreen(),
         '/login': (context) => const LoginScreen(),
+        '/register': (context) => const RegisterScreen(),
         '/admin_dashboard': (context) => const AdminDashboard(),
       },
     );

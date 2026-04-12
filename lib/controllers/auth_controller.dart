@@ -23,11 +23,21 @@ class AuthController extends ChangeNotifier {
       // Hasheamos la contraseña para que coincida con lo guardado (SHA-256)
       final String hashedPass = HashHelper.hashPassword(password);
 
-      // 1. Intentar login en el sistema oficial de Supabase Auth
-      final authResponse = await _supabase.auth.signInWithPassword(
-        email: email,
-        password: hashedPass,
-      );
+      AuthResponse authResponse;
+      try {
+        // 1. Intentar login con contraseña HASHEADA (Nuevo sistema)
+        authResponse = await _supabase.auth.signInWithPassword(
+          email: email,
+          password: hashedPass,
+        );
+      } catch (e) {
+        // 2. Si falló, intentar con contraseña PLAIN (Sistema anterior / Legacy)
+        debugPrint("Falló login con hash, intentando con raw...");
+        authResponse = await _supabase.auth.signInWithPassword(
+          email: email,
+          password: password,
+        );
+      }
       
       if (authResponse.user != null) {
         // 2. Si Auth funciona, buscamos su ROL en tu tabla pública 'usuarios'
