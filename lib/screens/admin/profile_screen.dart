@@ -175,10 +175,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         UserAttributes(password: _newPasswordController.text),
       );
 
-      // 1. Actualizar en Supabase Auth (Plano)
-      await _supabase.auth.updateUser(UserAttributes(password: _newPasswordController.text));
-
-      // 2. Sincronizar en 'usuarios' (Bcrypt)
+      // 1. Sincronizar en 'usuarios' (Bcrypt)
       if (_userData != null) {
         final hashedPass = HashHelper.hashPassword(_newPasswordController.text);
         await _supabase.from('usuarios').update({'contrasena': hashedPass}).eq('id_usuario', _userData!['id_usuario']);

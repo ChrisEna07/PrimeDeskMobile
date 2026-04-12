@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:intl/intl.dart';
 import '../../core/utils/hash_helper.dart';
 
 class EmployeeFormScreen extends StatefulWidget {
-  final dynamic employee; // null para nuevo, con datos para editar
+  final Map<String, dynamic>? employee;
+
   const EmployeeFormScreen({super.key, this.employee});
 
   @override
@@ -13,8 +14,8 @@ class EmployeeFormScreen extends StatefulWidget {
 }
 
 class _EmployeeFormScreenState extends State<EmployeeFormScreen> {
-  final _supabase = Supabase.instance.client;
   final _formKey = GlobalKey<FormState>();
+  final _supabase = Supabase.instance.client;
 
   late TextEditingController _nombreController;
   late TextEditingController _apellidoController;
@@ -22,57 +23,28 @@ class _EmployeeFormScreenState extends State<EmployeeFormScreen> {
   late TextEditingController _telefonoController;
   late TextEditingController _barrioController;
   late TextEditingController _direccionController;
-  late TextEditingController
-      _passwordController; // Nuevo controller para contraseña
+  late TextEditingController _passwordController;
 
-  String _tipoDocumento = 'Cédula de Ciudadanía';
+  String _tipoDocumento = 'CC';
   DateTime? _fechaNacimiento;
   DateTime? _fechaIngreso;
-  bool _isSaving = false;
-  bool _obscurePassword = true;
-
-  final List<String> _docOptions = [
-    'Cédula de Ciudadanía',
-    'Cédula de Extranjería',
-    'Pasaporte'
-  ];
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    final e = widget.employee;
-    _nombreController =
-        TextEditingController(text: e?['nombre']?.toString() ?? '');
-    _apellidoController =
-        TextEditingController(text: e?['apellido']?.toString() ?? '');
-    _documentoController =
-        TextEditingController(text: e?['documento']?.toString() ?? '');
-    _telefonoController =
-        TextEditingController(text: e?['telefono']?.toString() ?? '');
-    _barrioController =
-        TextEditingController(text: e?['barrio']?.toString() ?? '');
-    _direccionController =
-        TextEditingController(text: e?['direccion']?.toString() ?? '');
-    _passwordController = TextEditingController(); // Inicialización
+    _nombreController = TextEditingController(text: widget.employee?['nombre']);
+    _apellidoController = TextEditingController(text: widget.employee?['apellido']);
+    _documentoController = TextEditingController(text: widget.employee?['documento']);
+    _telefonoController = TextEditingController(text: widget.employee?['telefono']);
+    _barrioController = TextEditingController(text: widget.employee?['barrio']);
+    _direccionController = TextEditingController(text: widget.employee?['direccion']);
+    _passwordController = TextEditingController();
 
-    if (e != null) {
-      final docFromDb = e['tipodocumento']?.toString() ?? 'CC';
-      if (docFromDb == 'CC') {
-        _tipoDocumento = 'Cédula de Ciudadanía';
-      } else if (docFromDb == 'CE') {
-        _tipoDocumento = 'Cédula de Extranjería';
-      } else if (docFromDb == 'PA' || docFromDb == 'PAS') {
-        _tipoDocumento = 'Pasaporte';
-      } else {
-        _tipoDocumento = docFromDb;
-      }
-
-      if (e['fechanacimiento'] != null) {
-        _fechaNacimiento = DateTime.tryParse(e['fechanacimiento'].toString());
-      }
-      if (e['fechaingreso'] != null) {
-        _fechaIngreso = DateTime.tryParse(e['fechaingreso'].toString());
-      }
+    if (widget.employee != null) {
+      _tipoDocumento = widget.employee?['tipodocumento'] ?? 'CC';
+      _fechaNacimiento = widget.employee?['fechanacimiento'] != null ? DateTime.parse(widget.employee!['fechanacimiento']) : null;
+      _fechaIngreso = widget.employee?['fechaingreso'] != null ? DateTime.parse(widget.employee!['fechaingreso']) : null;
     }
   }
 
@@ -91,84 +63,41 @@ class _EmployeeFormScreenState extends State<EmployeeFormScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Validar fechas obligatorias
-    if (_fechaNacimiento == null || _fechaIngreso == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Por favor seleccione las fechas requeridas.')));
-      return;
-    }
-
-    setState(() => _isSaving = true);
+    setState(() => _isLoading = true);
     try {
-      String dbTipoDoc = _tipoDocumento;
-      if (_tipoDocumento == 'Cédula de Ciudadanía') {
-        dbTipoDoc = 'CC';
-      } else if (_tipoDocumento == 'Cédula de Extranjería') {
-        dbTipoDoc = 'CE';
-      } else if (_tipoDocumento == 'Pasaporte') {
-        dbTipoDoc = 'PA';
-      }
-
-      // Formateo de fecha estricto para PostgreSQL (YYYY-MM-DD)
-      final data = {
-        'nombre': _nombreController.text,
-        'apellido': _apellidoController.text,
-        'tipodocumento': dbTipoDoc,
-        'documento': _documentoController.text,
-        'telefono': _telefonoController.text,
-        'barrio': _barrioController.text,
-        'direccion': _direccionController.text,
-        'fechanacimiento': _fechaNacimiento?.toIso8601String().split('T')[0],
-        'fechaingreso': _fechaIngreso?.toIso8601String().split('T')[0],
-      };
-
-      if (widget.employee != null) {
-        // ACTUALIZAR EMPLEADO
-        await _supabase
-            .from('empleados')
-            .update(data)
-            .eq('id_empleado', widget.employee['id_empleado']);
-      } else {
-        // REGISTRAR NUEVO (Usuario + Empleado)
-        if (_passwordController.text.isEmpty) {
-          throw 'La contraseña es requerida para nuevos empleados.';
-        }
-
+      if (widget.employee == null) {
+        if (_passwordController.text.isEmpty) throw "Contraseña obligatoria.";
         final hashedPass = HashHelper.hashPassword(_passwordController.text);
         final email = 'emp_${DateTime.now().millisecondsSinceEpoch}@primedesk.com';
 
-        // 1. Crear en Auth (Plano)
-        await _supabase.auth.signUp(email: email, password: _passwordController.text);
+        final newUser = await _supabase.from('usuarios').insert({'correo': email, 'contrasena': hashedPass, 'estado': true, 'id_rol': 2}).select('id_usuario').single();
+        final idUsuario = newUser['id_usuario'];
 
-        // 2. Crear en Usuarios (Bcrypt)
-        final newUser = await _supabase
-            .from('usuarios')
-            .insert({
-              'correo': email,
-              'contrasena': hashedPass,
-              'estado': true,
-              'id_rol': 2
-            })
-            .select('id_usuario')
-            .single();
-
-        data['id_usuario'] = newUser['id_usuario'];
-        await _supabase.from('empleados').insert(data);
+        await _supabase.from('empleados').insert({
+          'id_usuario': idUsuario, 'nombre': _nombreController.text.trim(), 'apellido': _apellidoController.text.trim(),
+          'tipodocumento': _tipoDocumento, 'documento': _documentoController.text.trim(), 'telefono': _telefonoController.text.trim(),
+          'barrio': _barrioController.text.trim(), 'direccion': _direccionController.text.trim(),
+          'fechanacimiento': _fechaNacimiento?.toIso8601String().split('T')[0],
+          'fechaingreso': _fechaIngreso?.toIso8601String().split('T')[0] ?? DateTime.now().toIso8601String(),
+        });
+      } else {
+        final idUsuario = widget.employee!['id_usuario'];
+        if (_passwordController.text.isNotEmpty) {
+          await _supabase.from('usuarios').update({'contrasena': HashHelper.hashPassword(_passwordController.text)}).eq('id_usuario', idUsuario);
+        }
+        await _supabase.from('empleados').update({
+          'nombre': _nombreController.text.trim(), 'apellido': _apellidoController.text.trim(), 'tipodocumento': _tipoDocumento,
+          'documento': _documentoController.text.trim(), 'telefono': _telefonoController.text.trim(),
+          'barrio': _barrioController.text.trim(), 'direccion': _direccionController.text.trim(),
+          'fechanacimiento': _fechaNacimiento?.toIso8601String().split('T')[0],
+          'fechaingreso': _fechaIngreso?.toIso8601String().split('T')[0],
+        }).eq('id_empleado', widget.employee!['id_empleado']);
       }
-
-      if (mounted) {
-        Navigator.pop(context, true);
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Operación exitosa.')));
-      }
+      if (mounted) Navigator.pop(context, true);
     } catch (e) {
-      setState(() {
-        _isSaving = false;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Error: $e'), backgroundColor: Colors.redAccent));
-      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -176,152 +105,35 @@ class _EmployeeFormScreenState extends State<EmployeeFormScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0F1113),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF0F1113),
-        elevation: 0,
-        title: Text(
-            widget.employee != null ? 'Editar Empleado' : 'Nuevo Empleado',
-            style: const TextStyle(fontWeight: FontWeight.bold)),
-      ),
+      appBar: AppBar(title: Text(widget.employee == null ? 'Nuevo Empleado' : 'Editar Empleado'), backgroundColor: Colors.transparent, foregroundColor: Colors.white),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // --- SECCIÓN: ACCESO ---
-              if (widget.employee == null) ...[
-                const Row(
-                  children: [
-                    Icon(LucideIcons.shieldCheck,
-                        color: Color(0xFF00B2FF), size: 20),
-                    SizedBox(width: 12),
-                    Text('Credenciales de Acceso',
-                        style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white)),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _buildTextField(_passwordController, 'Contraseña inicial *',
-                    isPassword: true,
-                    obscureText: _obscurePassword,
-                    onToggleVisibility: () =>
-                        setState(() => _obscurePassword = !_obscurePassword)),
-                const SizedBox(height: 24),
-                const Divider(color: Colors.white10),
-                const SizedBox(height: 24),
-              ],
-
-              // --- SECCIÓN: DATOS PERSONALES ---
-              const Row(
-                children: [
-                  Icon(LucideIcons.user, color: Color(0xFF00B2FF), size: 20),
-                  SizedBox(width: 12),
-                  Text('Información Personal',
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white)),
-                ],
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                      child: _buildTextField(_nombreController, 'Nombre *')),
-                  const SizedBox(width: 16),
-                  Expanded(
-                      child:
-                          _buildTextField(_apellidoController, 'Apellido *')),
-                ],
-              ),
+              _buildField('Nombre *', _nombreController, icon: LucideIcons.user, formatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]'))], validator: (v) => v!.isEmpty ? 'Requerido' : null),
               const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                      child: _buildDropdown('Tipo de Documento', _docOptions)),
-                  const SizedBox(width: 16),
-                  Expanded(
-                      child: _buildTextField(
-                          _documentoController, 'Núm. Documento *',
-                          keyboardType: TextInputType.number)),
-                ],
-              ),
+              _buildField('Apellido *', _apellidoController, icon: LucideIcons.user, formatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z\s]'))], validator: (v) => v!.isEmpty ? 'Requerido' : null),
               const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                      child: _buildTextField(_telefonoController, 'Teléfono *',
-                          keyboardType: TextInputType.phone)),
-                  const SizedBox(width: 16),
-                  Expanded(
-                      child: _buildDatePicker(
-                          'Fec. Nacimiento *',
-                          _fechaNacimiento,
-                          (d) => setState(() => _fechaNacimiento = d))),
-                ],
-              ),
+              _buildDropdown(),
               const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                      child: _buildDatePicker(
-                          'Fecha de Ingreso *',
-                          _fechaIngreso,
-                          (d) => setState(() => _fechaIngreso = d))),
-                  const SizedBox(width: 16),
-                  Expanded(
-                      child: _buildTextField(_barrioController, 'Barrio *')),
-                ],
-              ),
+              _buildField('Documento *', _documentoController, icon: LucideIcons.creditCard, keyboardType: TextInputType.number, formatters: [FilteringTextInputFormatter.digitsOnly], validator: (v) => (v!.length < 7 || v.length > 10) ? '7-10 números' : null),
               const SizedBox(height: 16),
-              _buildTextField(_direccionController, 'Dirección *'),
-
-              const SizedBox(height: 40),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Colors.white10),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12))),
-                      child: const Text('Cancelar',
-                          style: TextStyle(color: Colors.white)),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _isSaving ? null : _save,
-                      style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF00B2FF),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12))),
-                      child: _isSaving
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                  color: Colors.white, strokeWidth: 2))
-                          : Text(
-                              widget.employee == null
-                                  ? 'Registrar'
-                                  : 'Actualizar',
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 40),
+              _buildField('Teléfono *', _telefonoController, icon: LucideIcons.phone, keyboardType: TextInputType.phone, formatters: [FilteringTextInputFormatter.digitsOnly], validator: (v) => v!.length != 10 ? '10 números' : null),
+              const SizedBox(height: 16),
+              _buildField('Barrio', _barrioController, icon: LucideIcons.mapPin),
+              const SizedBox(height: 16),
+              _buildField('Dirección', _direccionController, icon: LucideIcons.home),
+              const SizedBox(height: 16),
+              _buildDatePicker('Fecha Nacimiento', _fechaNacimiento, (d) => setState(() => _fechaNacimiento = d)),
+              const SizedBox(height: 16),
+              _buildDatePicker('Fecha Ingreso', _fechaIngreso, (d) => setState(() => _fechaIngreso = d)),
+              const SizedBox(height: 16),
+              _buildField(widget.employee == null ? 'Contraseña *' : 'Nueva Contraseña (Opcional)', _passwordController, icon: LucideIcons.lock, obscure: true),
+              const SizedBox(height: 32),
+              SizedBox(width: double.infinity, height: 55, child: ElevatedButton(onPressed: _isLoading ? null : _save, style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF6B00)), child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text('GUARDAR'))),
             ],
           ),
         ),
@@ -329,139 +141,43 @@ class _EmployeeFormScreenState extends State<EmployeeFormScreen> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String label,
-      {TextInputType keyboardType = TextInputType.text,
-      bool isPassword = false,
-      bool obscureText = false,
-      VoidCallback? onToggleVisibility}) {
+  Widget _buildField(String label, TextEditingController controller, {IconData? icon, bool obscure = false, TextInputType keyboardType = TextInputType.text, List<TextInputFormatter>? formatters, String? Function(String?)? validator}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: const TextStyle(
-                color: Colors.white60,
-                fontSize: 13,
-                fontWeight: FontWeight.bold)),
+        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
         const SizedBox(height: 8),
         TextFormField(
-          controller: controller,
-          keyboardType: keyboardType,
-          obscureText: obscureText,
-          style: const TextStyle(color: Colors.white, fontSize: 14),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: const Color(0xFF1E2124),
-            border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            suffixIcon: isPassword
-                ? IconButton(
-                    icon: Icon(
-                        obscureText ? LucideIcons.eyeOff : LucideIcons.eye,
-                        color: Colors.white30,
-                        size: 18),
-                    onPressed: onToggleVisibility,
-                  )
-                : null,
-          ),
-          validator: (val) => val == null || val.isEmpty ? 'Requerido' : null,
+          controller: controller, obscureText: obscure, keyboardType: keyboardType, inputFormatters: formatters, validator: validator,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(prefixIcon: icon != null ? Icon(icon, color: Colors.white24, size: 18) : null, filled: true, fillColor: const Color(0xFF1E2124), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none)),
         ),
       ],
     );
   }
 
-  Widget _buildDropdown(String label, List<String> options) {
-    String safeValue =
-        options.contains(_tipoDocumento) ? _tipoDocumento : options[0];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label,
-            style: const TextStyle(
-                color: Colors.white60,
-                fontSize: 13,
-                fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-              color: const Color(0xFF1E2124),
-              borderRadius: BorderRadius.circular(12)),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: safeValue,
-              dropdownColor: const Color(0xFF1E2124),
-              isExpanded: true,
-              items: options
-                  .map((o) => DropdownMenuItem(
-                      value: o,
-                      child: Text(o, style: const TextStyle(fontSize: 14))))
-                  .toList(),
-              onChanged: (val) {
-                if (val != null) setState(() => _tipoDocumento = val);
-              },
-              style: const TextStyle(color: Colors.white),
-            ),
-          ),
-        ),
-      ],
+  Widget _buildDropdown() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16), decoration: BoxDecoration(color: const Color(0xFF1E2124), borderRadius: BorderRadius.circular(12)),
+      child: DropdownButton<String>(value: _tipoDocumento, dropdownColor: const Color(0xFF1E2124), isExpanded: true, underline: const SizedBox(), items: ['CC', 'CE', 'TI', 'PP'].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(color: Colors.white)))).toList(), onChanged: (v) => setState(() => _tipoDocumento = v!)),
     );
   }
 
-  Widget _buildDatePicker(
-      String label, DateTime? date, Function(DateTime) onPick) {
+  Widget _buildDatePicker(String label, DateTime? date, Function(DateTime) onPick) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: const TextStyle(
-                color: Colors.white60,
-                fontSize: 13,
-                fontWeight: FontWeight.bold)),
+        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
         const SizedBox(height: 8),
         InkWell(
           onTap: () async {
-            final d = await showDatePicker(
-              context: context,
-              initialDate: date ?? DateTime(2000),
-              firstDate: DateTime(1950),
-              lastDate: DateTime.now(),
-              builder: (context, child) {
-                return Theme(
-                  data: Theme.of(context).copyWith(
-                    colorScheme: const ColorScheme.dark(
-                        primary: Color(0xFF00B2FF),
-                        onPrimary: Colors.white,
-                        surface: Color(0xFF1E2124)),
-                    dialogTheme: const DialogThemeData(
-                      backgroundColor: Color(0xFF0F1113),
-                    ),
-                  ),
-                  child: child!,
-                );
-              },
-            );
+            final now = DateTime.now();
+            final d = await showDatePicker(context: context, initialDate: date ?? now, firstDate: DateTime(1900), lastDate: now);
             if (d != null) onPick(d);
           },
           child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-                color: const Color(0xFF1E2124),
-                borderRadius: BorderRadius.circular(12)),
-            child: Row(
-              children: [
-                Text(
-                    date != null
-                        ? DateFormat('dd/MM/yyyy').format(date)
-                        : 'Seleccionar',
-                    style: const TextStyle(color: Colors.white, fontSize: 14)),
-                const Spacer(),
-                const Icon(LucideIcons.calendar,
-                    size: 16, color: Colors.white30),
-              ],
-            ),
+            padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: const Color(0xFF1E2124), borderRadius: BorderRadius.circular(12)),
+            child: Row(children: [const Icon(LucideIcons.calendar, color: Colors.white24, size: 18), const SizedBox(width: 12), Text(date == null ? 'Seleccionar' : date.toIso8601String().split('T')[0], style: const TextStyle(color: Colors.white))]),
           ),
         ),
       ],

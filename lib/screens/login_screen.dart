@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../controllers/auth_controller.dart';
 import 'admin/admin_dashboard.dart';
 import 'cliente/client_dashboard.dart';
+import 'developer_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -146,6 +147,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             : const Text('INGRESAR', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                         ),
                       ),
+                      const SizedBox(height: 30),
+                      _buildVersionFooter(),
                     ],
                   ),
                 ),
@@ -153,6 +156,57 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  int _devTapCount = 0;
+  void _showDevPassPrompt() {
+    final passCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (c) => AlertDialog(
+        backgroundColor: const Color(0xFF1E2124),
+        title: const Text('ACCESO RESTRINGIDO', style: TextStyle(color: Colors.white, fontSize: 16)),
+        content: TextField(
+          controller: passCtrl,
+          obscureText: true,
+          autofocus: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            hintText: 'Ingrese clave de desarrollador',
+            hintStyle: TextStyle(color: Colors.white24, fontSize: 13),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c), child: const Text('CANCELAR')),
+          TextButton(
+            onPressed: () {
+              if (passCtrl.text == 'PrimeDeskFuture') {
+                Navigator.pop(c);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const DeveloperScreen()));
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Clave incorrecta')));
+              }
+            },
+            child: const Text('ENTRAR', style: TextStyle(color: Color(0xFFFF6B00))),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVersionFooter() {
+    return Center(
+      child: GestureDetector(
+        onTap: () {
+          _devTapCount++;
+          if (_devTapCount >= 7) {
+            _devTapCount = 0;
+            _showDevPassPrompt();
+          }
+        },
+        child: const Text('v1.1.2', style: TextStyle(color: Colors.white10, fontSize: 10)),
       ),
     );
   }

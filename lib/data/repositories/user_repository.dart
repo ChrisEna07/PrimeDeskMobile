@@ -14,24 +14,14 @@ class UserRepository {
       // 1. Hashear la contraseña usando BCrypt para la tabla pública
       final String bcryptHash = HashHelper.hashPassword(password);
 
-      // 2. Crear usuario en Supabase Auth con la contraseña PLANA
-      // Supabase Auth se encarga de aplicar su propio BCrypt internamente.
-      final authResponse = await _supabase.auth.signUp(
-        email: email,
-        password: password,
-      );
-
-      if (authResponse.user == null) {
-        throw "No se pudo crear el usuario en el sistema de autenticación.";
-      }
-
-      // 3. Insertar en la tabla pública 'Usuarios' vinculada
+      // 2. Insertar directamente en la tabla pública 'usuarios'
+      // NOTA: No usamos Supabase Auth, el control es manual por DB
       final userResponse = await _supabase
           .from('usuarios')
           .insert({
             'id_rol': idRol,
             'correo': email,
-            'contrasena': bcryptHash, // Guardamos el hash BCrypt aquí
+            'contrasena': bcryptHash,
             'estado': true,
           })
           .select()
@@ -39,7 +29,7 @@ class UserRepository {
 
       final int newUserId = userResponse['id_usuario'];
 
-      // 4. Decidir en qué tabla insertar según el Rol
+      // 3. Decidir en qué tabla insertar según el Rol
       if (idRol == 3 || idRol == 4) {
         await _supabase.from('clientes').insert({
           'id_usuario': newUserId,

@@ -6,6 +6,7 @@ import 'screens/landing_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/admin/admin_dashboard.dart';
+import 'screens/cliente/client_dashboard.dart';
 import 'controllers/auth_controller.dart';
 
 void main() async {
@@ -57,9 +58,11 @@ class PrimeDeskApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: Supabase.instance.client.auth.currentSession == null
+      home: context.watch<AuthController>().user == null
           ? const LandingScreen()
-          : const AdminDashboard(),
+          : (context.read<AuthController>().user!.idRol == 1 || context.read<AuthController>().user!.idRol == 2)
+            ? const AdminDashboard()
+            : const ClientDashboard(),
       routes: {
         '/landing': (context) => const LandingScreen(),
         '/login': (context) => const LoginScreen(),
