@@ -88,7 +88,6 @@ class _AgendamientoFormScreenState extends State<AgendamientoFormScreen> {
       // 2. Crear Reparación automática (Lógica React Parity)
       await _supabase.from('reparaciones').insert({
         'id_motocicleta': _selectedMoto,
-        'id_mecanico': _selectedMecanico,
         'id_agendamiento': response['id_agendamiento'],
         'estado': 'Pendiente',
         'observaciones': 'Generada desde agendamiento: ${_notesController.text}',

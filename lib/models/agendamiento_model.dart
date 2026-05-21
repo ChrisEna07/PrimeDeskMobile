@@ -19,24 +19,24 @@ class Agendamiento {
 
   factory Agendamiento.fromJson(Map<String, dynamic> json) {
     return Agendamiento(
-      id: json['ID_Agendamiento'],
-      idMotocicleta: json['ID_Motocicleta'],
-      idEmpleado: json['ID_Empleado'],
-      dia: DateTime.parse(json['Dia']),
-      horaInicio: json['HoraInicio'],
-      horaFin: json['HoraFin'],
-      notas: json['Notas'],
+      id: json['id_agendamiento'],
+      idMotocicleta: json['id_motocicleta'],
+      idEmpleado: json['id_empleado'],
+      dia: DateTime.parse(json['dia']),
+      horaInicio: json['horainicio'],
+      horaFin: json['horafin'],
+      notas: json['notas'],
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
-      'ID_Motocicleta': idMotocicleta,
-      'ID_Empleado': idEmpleado,
-      'Dia': dia.toIso8601String().split('T')[0], // YYYY-MM-DD
-      'HoraInicio': horaInicio,
-      'HoraFin': horaFin,
-      'Notas': notas,
+      'id_motocicleta': idMotocicleta,
+      'id_empleado': idEmpleado,
+      'dia': dia.toIso8601String().split('T')[0],
+      'horainicio': horaInicio,
+      'horafin': horaFin,
+      'notas': notas,
     };
   }
 }

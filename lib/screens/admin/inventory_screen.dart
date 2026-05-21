@@ -42,7 +42,10 @@ class _InventoryScreenState extends State<InventoryScreen> {
           _isLoading = false;
         });
       } catch (err) {
-        if (mounted) setState(() => _isLoading = false);
+        if (mounted) {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al cargar productos: $err'), backgroundColor: Colors.redAccent));
+        }
       }
     }
   }

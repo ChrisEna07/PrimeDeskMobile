@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/utils/hash_helper.dart';
 
@@ -11,39 +14,36 @@ class UserRepository {
     required Map<String, dynamic> datosPersonales,
   }) async {
     try {
-      // 1. Hashear la contraseña usando BCrypt para la tabla pública
-      final String bcryptHash = HashHelper.hashPassword(password);
+      final String baseUrl = dotenv.env['API_URL'] ?? 'https://api.rmmedellin.site';
+      final Uri url = Uri.parse('$baseUrl/api/auth/register');
 
-      // 2. Insertar directamente en la tabla pública 'usuarios'
-      // NOTA: No usamos Supabase Auth, el control es manual por DB
-      final userResponse = await _supabase
-          .from('usuarios')
-          .insert({
-            'id_rol': idRol,
-            'correo': email,
-            'contrasena': bcryptHash,
-            'estado': true,
-          })
-          .select()
-          .single();
+      final body = {
+        'correo': email,
+        'contrasena': password,
+        'id_rol': idRol,
+        'nombre': datosPersonales['nombre'],
+        'apellido': datosPersonales['apellido'],
+        'documento': datosPersonales['documento'],
+        'telefono': datosPersonales['telefono'],
+        // Campos adicionales si el backend los acepta
+        'tipodocumento': datosPersonales['tipodocumento'],
+        'barrio': datosPersonales['barrio'],
+        'direccion': datosPersonales['direccion'],
+        'fechanacimiento': datosPersonales['fechanacimiento'],
+      };
 
-      final int newUserId = userResponse['id_usuario'];
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(body),
+      );
 
-      // 3. Decidir en qué tabla insertar según el Rol
-      if (idRol == 3 || idRol == 4) {
-        await _supabase.from('clientes').insert({
-          'id_usuario': newUserId,
-          ...datosPersonales,
-        });
-      } else {
-        await _supabase.from('empleados').insert({
-          'id_usuario': newUserId,
-          'fecha_ingreso': DateTime.now().toIso8601String(),
-          ...datosPersonales,
-        });
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        final Map<String, dynamic> errorData = jsonDecode(response.body);
+        throw Exception(errorData['error'] ?? errorData['message'] ?? 'Error desconocido al registrar usuario');
       }
     } catch (e) {
-      throw Exception("Error al guardar en la base de datos: $e");
+      throw Exception("Error de conexión con el servidor: $e");
     }
   }
 }

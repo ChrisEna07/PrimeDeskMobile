@@ -29,14 +29,29 @@ class _VentaListScreenState extends State<VentaListScreen> {
             clientes (nombre, apellido),
             reparaciones (id_reparacion)
           ''')
-          .order('fecha', ascending: false);
+          .order('id_venta', ascending: false);
       
       setState(() {
         _ventas = response;
         _isLoading = false;
       });
     } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
+      // Fallback: consulta simple si los joins no existen
+      try {
+        final fallback = await _supabase
+            .from('ventas')
+            .select()
+            .order('id_venta', ascending: false);
+        setState(() {
+          _ventas = fallback;
+          _isLoading = false;
+        });
+      } catch (err) {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al cargar ventas: $err'), backgroundColor: Colors.redAccent));
+        }
+      }
     }
   }
 

@@ -130,7 +130,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         icon: LucideIcons.lock,
                         isPassword: true,
                       ),
-                      const SizedBox(height: 40),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () => Navigator.pushNamed(context, '/forgot_password'),
+                          child: const Text('¿Olvidaste tu contraseña?', style: TextStyle(color: Color(0xFFFF6B00))),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
                       
                       // Botón
                       SizedBox(

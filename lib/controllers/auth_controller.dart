@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/utils/hash_helper.dart';
 import '../models/usuario_model.dart';
@@ -130,5 +133,45 @@ class AuthController extends ChangeNotifier {
     await prefs.remove('user_email');
     user = null;
     notifyListeners();
+  }
+
+  Future<void> verifyEmail(String token) async {
+    final baseUrl = dotenv.env['API_URL'] ?? 'https://api.rmmedellin.site';
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/auth/verify'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'token': token}),
+    );
+    if (response.statusCode != 200) {
+      final Map<String, dynamic> errorData = jsonDecode(response.body);
+      throw Exception(errorData['error'] ?? errorData['message'] ?? 'Error al verificar correo');
+    }
+  }
+
+  Future<void> forgotPassword(String email) async {
+    final baseUrl = dotenv.env['API_URL'] ?? 'https://api.rmmedellin.site';
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/auth/forgot-password'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'correo': email}),
+    );
+    if (response.statusCode != 200) {
+      final Map<String, dynamic> errorData = jsonDecode(response.body);
+      throw Exception(errorData['error'] ?? errorData['message'] ?? 'Error al solicitar recuperación de contraseña');
+    }
+  }
+
+  Future<void> resetPassword(String token, String newPassword) async {
+    final baseUrl = dotenv.env['API_URL'] ?? 'https://api.rmmedellin.site';
+    // Asumiendo que el endpoint es reset-password
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/auth/reset-password'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'token': token, 'nueva_contrasena': newPassword}),
+    );
+    if (response.statusCode != 200) {
+      final Map<String, dynamic> errorData = jsonDecode(response.body);
+      throw Exception(errorData['error'] ?? errorData['message'] ?? 'Error al restablecer contraseña');
+    }
   }
 }

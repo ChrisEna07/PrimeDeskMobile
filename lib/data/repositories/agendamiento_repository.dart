@@ -19,9 +19,9 @@ class AgendamientoRepository {
         .from('agendamientos')
         .select('''
           *,
-          motocicletas(Placa, Marca, Modelo),
-          empleados(Nombre, Apellido)
+          motocicletas(placa, marca, modelo),
+          empleados(nombre, apellido)
         ''')
-        .eq('Dia', fechaStr);
+        .eq('dia', fechaStr);
   }
 }

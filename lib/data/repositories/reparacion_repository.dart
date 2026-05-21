@@ -11,7 +11,7 @@ class ReparacionRepository {
         .insert(rep.toMap())
         .select()
         .single();
-    return response['ID_Reparacion'];
+    return response['id_reparacion'];
   }
 
   // Registrar un avance (Lo que hace el mecánico día a día)
@@ -29,8 +29,8 @@ class ReparacionRepository {
   ) async {
     return await _supabase
         .from('reparaciones_avances')
-        .select('*, empleados(Nombre, Apellido)')
-        .eq('ID_Reparacion', idReparacion)
-        .order('Fecha', ascending: false);
+        .select('*, empleados(nombre, apellido)')
+        .eq('id_reparacion', idReparacion)
+        .order('id_avance', ascending: false);
   }
 }

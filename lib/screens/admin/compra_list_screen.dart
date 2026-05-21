@@ -26,15 +26,18 @@ class _CompraListScreenState extends State<CompraListScreen> {
           .from('compras')
           .select('''
             *,
-            proveedores (nombre_empresa)
+            proveedores (nombreempresa)
           ''')
-          .order('fechacompra', ascending: false);
+          .order('id_compra', ascending: false);
       setState(() {
         _compras = response;
         _isLoading = false;
       });
     } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al cargar compras: $e'), backgroundColor: Colors.redAccent));
+      }
     }
   }
 
@@ -66,7 +69,7 @@ class _CompraListScreenState extends State<CompraListScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(prov?['nombre_empresa'] ?? 'Proveedor Desconocido', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          Text(prov?['nombreempresa'] ?? 'Proveedor Desconocido', style: const TextStyle(fontWeight: FontWeight.bold)),
                           Text('ID: COMP-${c['id_compra']}', style: const TextStyle(color: Colors.white30, fontSize: 10)),
                         ],
                       ),

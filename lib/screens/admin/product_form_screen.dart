@@ -45,7 +45,6 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       await _supabase.from('productos').insert({
         'nombre': _nombreController.text,
         'marca': _marcaController.text,
-        'cantidad': int.tryParse(_cantidadController.text) ?? 0,
         'id_categoria': _selectedCategoria,
         'descripcion': _descripcionController.text,
         'estado': true,

@@ -249,7 +249,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         if (_activeStep > 1) const SizedBox(width: 16),
         Expanded(child: ElevatedButton(onPressed: _isLoading ? null : (_activeStep < 3 ? _nextStep : _handleRegister), 
           style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF6B00)), 
-          child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : Text(_activeStep < 3 ? 'Continuar' : 'Registrar'))),
+          child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : Text(_activeStep < 3 ? 'Continuar' : 'Registrar', style: const TextStyle(color: Colors.white)))),
       ],
     );
   }

@@ -31,18 +31,30 @@ class _RepairListScreenState extends State<RepairListScreen> {
           .from('reparaciones')
           .select('''
             *,
-            motocicletas (marca, modelo, placa)
+            motocicletas (id_cliente, marca, modelo, placa, clientes (nombre))
           ''')
-          .order('fecha', ascending: false);
+          .order('id_reparacion', ascending: false);
       
       setState(() {
         _reparaciones = response;
         _isLoading = false;
       });
     } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      // Fallback: consultar sin join si la FK no existe
+      try {
+        final fallback = await _supabase
+            .from('reparaciones')
+            .select()
+            .order('id_reparacion', ascending: false);
+        setState(() {
+          _reparaciones = fallback;
+          _isLoading = false;
+        });
+      } catch (err) {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $err')));
+        }
       }
     }
   }

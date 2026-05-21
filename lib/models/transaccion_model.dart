@@ -15,10 +15,10 @@ class Compra {
   });
 
   Map<String, dynamic> toMap() => {
-    'ID_Proveedor': idProveedor,
-    'ID_Motocicleta': idMotocicleta,
-    'Total': total,
-    'Notas': notas,
+    'id_proveedor': idProveedor,
+    'id_motocicleta': idMotocicleta,
+    'total': total,
+    'notas': notas,
   };
 }
 
@@ -41,10 +41,10 @@ class Venta {
   });
 
   Map<String, dynamic> toMap() => {
-    'ID_Reparacion': idReparacion,
-    'ID_Empleado': idEmpleado,
-    'ID_Motocicleta': idMotocicleta,
-    'Total': total,
-    'Observaciones': observaciones,
+    'id_reparacion': idReparacion,
+    'id_empleado': idEmpleado,
+    'id_motocicleta': idMotocicleta,
+    'total': total,
+    'observaciones': observaciones,
   };
 }

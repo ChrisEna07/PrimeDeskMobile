@@ -17,10 +17,10 @@ class Usuario {
   });
 
   Map<String, dynamic> toMap() => {
-    'ID_Rol': idRol,
-    'Correo': correo,
-    'Contrasena': contrasena,
-    'Estado': estado,
+    'id_rol': idRol,
+    'correo': correo,
+    'contrasena': contrasena,
+    'estado': estado,
   };
 }
 
@@ -48,17 +48,17 @@ class DatosPersonales {
 
   Map<String, dynamic> toMap(int idUsuario, bool isEmpleado) {
     var map = {
-      'ID_Usuario': idUsuario,
-      'Nombre': nombre,
-      'Apellido': apellido,
-      'TipoDocumento': tipoDocumento,
-      'Documento': documento,
-      'Telefono': telefono,
-      'Barrio': barrio,
-      'Direccion': direccion,
-      'FechaNacimiento': fechaNacimiento.toIso8601String(),
+      'id_usuario': idUsuario,
+      'nombre': nombre,
+      'apellido': apellido,
+      'tipodocumento': tipoDocumento,
+      'documento': documento,
+      'telefono': telefono,
+      'barrio': barrio,
+      'direccion': direccion,
+      'fechanacimiento': fechaNacimiento.toIso8601String(),
     };
-    if (isEmpleado) map['FechaIngreso'] = DateTime.now().toIso8601String();
+    if (isEmpleado) map['fechaingreso'] = DateTime.now().toIso8601String();
     return map;
   }
 }

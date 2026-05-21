@@ -39,7 +39,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _tipoDocumento = 'Cédula de Ciudadanía';
   DateTime? _fechaNacimiento;
   
-  final List<String> _docOptions = ['Cédula de Ciudadanía', 'Cédula de Extranjería', 'Pasaporte'];
+  final List<String> _docOptions = ['Cédula de Ciudadanía', 'Cédula de Extranjería', 'Pasaporte', 'Tarjeta de Identidad'];
 
   @override
   void initState() {
@@ -66,8 +66,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _fetchProfile() async {
     try {
-      final authUser = _supabase.auth.currentUser;
-      if (authUser == null || authUser.email == null) {
+      final authCtrl = context.read<AuthController>();
+      final currentUser = authCtrl.user;
+      final email = currentUser?.correo;
+      if (email == null) {
         if (mounted) setState(() => _isLoading = false);
         return;
       }
@@ -75,7 +77,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final userResponse = await _supabase
           .from('usuarios')
           .select('*, roles(*)')
-          .eq('correo', authUser.email!)
+          .eq('correo', email)
           .maybeSingle();
 
       if (userResponse != null) {
@@ -101,7 +103,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           String docFromDb = _employeeData!['tipodocumento'] ?? 'Cédula de Ciudadanía';
           if (docFromDb == 'CC') docFromDb = 'Cédula de Ciudadanía';
           if (docFromDb == 'CE') docFromDb = 'Cédula de Extranjería';
-          if (docFromDb == 'PA' || docFromDb == 'PAS') docFromDb = 'Pasaporte';
+          if (docFromDb == 'PA' || docFromDb == 'PAS' || docFromDb == 'PP') docFromDb = 'Pasaporte';
+          if (docFromDb == 'TI') docFromDb = 'Tarjeta de Identidad';
           _tipoDocumento = _docOptions.contains(docFromDb) ? docFromDb : _docOptions.first;
 
           if (_employeeData!['fechanacimiento'] != null) {
@@ -133,7 +136,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       String dbTipoDoc = _tipoDocumento;
       if (_tipoDocumento == 'Cédula de Ciudadanía') dbTipoDoc = 'CC';
       else if (_tipoDocumento == 'Cédula de Extranjería') dbTipoDoc = 'CE';
-      else if (_tipoDocumento == 'Pasaporte') dbTipoDoc = 'PA';
+      else if (_tipoDocumento == 'Pasaporte') dbTipoDoc = 'PP';
+      else if (_tipoDocumento == 'Tarjeta de Identidad') dbTipoDoc = 'TI';
 
       final data = {
         'nombre': _nombreController.text,

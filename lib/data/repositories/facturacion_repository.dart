@@ -18,8 +18,8 @@ class FacturacionRepository {
       // 2. Actualizar el estado de la reparación a 'Finalizado'
       await _supabase
           .from('reparaciones')
-          .update({'Estado': 'Finalizado'})
-          .eq('ID_Reparacion', venta.idReparacion);
+          .update({'estado': 'Finalizado'})
+          .eq('id_reparacion', venta.idReparacion);
     } catch (e) {
       throw Exception("Error en la transacción de venta: $e");
     }

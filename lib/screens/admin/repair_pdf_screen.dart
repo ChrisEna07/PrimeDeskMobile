@@ -15,7 +15,7 @@ class RepairPdfScreen extends StatelessWidget {
     
     final cliente = repair['motocicletas']?['clientes'];
     final moto = repair['motocicletas'];
-    final fecha = repair['fecha'] != null ? DateFormat('dd/MM/yyyy', 'es').format(DateTime.parse(repair['fecha'])) : 'Desconocida';
+    final fecha = 'Reciente';
 
     pdf.addPage(
       pw.Page(
@@ -97,7 +97,7 @@ class RepairPdfScreen extends StatelessWidget {
                 width: double.infinity,
                 padding: const pw.EdgeInsets.all(12),
                 decoration: pw.BoxDecoration(color: PdfColors.grey100, borderRadius: pw.BorderRadius.circular(8)),
-                child: pw.Text(repair['tiposervicio'] ?? 'N/A', style: const pw.TextStyle(fontSize: 12)),
+                child: pw.Text('N/A', style: const pw.TextStyle(fontSize: 12)),
               ),
               pw.SizedBox(height: 16),
               pw.Text('OBSERVACIONES', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),

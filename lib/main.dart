@@ -7,6 +7,9 @@ import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/admin/admin_dashboard.dart';
 import 'screens/cliente/client_dashboard.dart';
+import 'screens/verify_email_screen.dart';
+import 'screens/forgot_password_screen.dart';
+import 'screens/reset_password_screen.dart';
 import 'controllers/auth_controller.dart';
 
 void main() async {
@@ -67,6 +70,9 @@ class PrimeDeskApp extends StatelessWidget {
         '/landing': (context) => const LandingScreen(),
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
+        '/verify_email': (context) => const VerifyEmailScreen(),
+        '/forgot_password': (context) => const ForgotPasswordScreen(),
+        '/reset_password': (context) => const ResetPasswordScreen(),
         '/admin_dashboard': (context) => const AdminDashboard(),
       },
     );

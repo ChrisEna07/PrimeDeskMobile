@@ -21,26 +21,26 @@ class Venta {
 
   factory Venta.fromJson(Map<String, dynamic> json) {
     return Venta(
-      id: json['ID_Venta'],
-      idReparacion: json['ID_Reparacion'],
-      idEmpleado: json['ID_Empleado'],
-      idMotocicleta: json['ID_Motocicleta'],
-      fecha: DateTime.parse(json['Fecha']),
-      total: (json['Total'] ?? 0).toDouble(),
-      observaciones: json['Observaciones'],
-      estado: json['Estado'] ?? true,
+      id: json['id_venta'],
+      idReparacion: json['id_reparacion'],
+      idEmpleado: json['id_empleado'],
+      idMotocicleta: json['id_motocicleta'],
+      fecha: DateTime.parse(json['fecha']),
+      total: (json['total'] ?? 0).toDouble(),
+      observaciones: json['observaciones'],
+      estado: json['estado'] ?? true,
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
-      'ID_Reparacion': idReparacion,
-      'ID_Empleado': idEmpleado,
-      'ID_Motocicleta': idMotocicleta,
-      'Fecha': fecha.toIso8601String().split('T')[0],
-      'Total': total,
-      'Observaciones': observaciones,
-      'Estado': estado,
+      'id_reparacion': idReparacion,
+      'id_empleado': idEmpleado,
+      'id_motocicleta': idMotocicleta,
+      'fecha': fecha.toIso8601String().split('T')[0],
+      'total': total,
+      'observaciones': observaciones,
+      'estado': estado,
     };
   }
 }

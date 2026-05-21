@@ -36,15 +36,7 @@ class _RepairFormScreenState extends State<RepairFormScreen> {
     super.initState();
     _observacionesController = TextEditingController(text: widget.repairData?['observaciones']?.toString() ?? '');
     
-    // Parse existing servicios if editing
-    if (widget.repairData?.containsKey('tiposervicio') == true && widget.repairData!['tiposervicio'] != null) {
-      final existingServices = widget.repairData!['tiposervicio'].toString().split(', ');
-      for (var s in existingServices) {
-        if (_servicios.containsKey(s)) {
-          _servicios[s] = true;
-        }
-      }
-    }
+    // Parse existing servicios if editing (deprecated - no longer stored in DB)
     
     // Si estamos editando, tratamos de auto-seleccionar la moto y su cliente
     if (widget.repairData != null && widget.repairData!['motocicletas'] != null) {
@@ -102,12 +94,10 @@ class _RepairFormScreenState extends State<RepairFormScreen> {
       final data = {
         'id_motocicleta': _selectedMotoId,
         'observaciones': _observacionesController.text,
-        'tiposervicio': activeServices,
       };
 
       if (widget.repairData == null) {
         data['estado'] = 'Pendiente';
-        data['fecha'] = DateTime.now().toIso8601String();
         await _supabase.from('reparaciones').insert(data);
       } else {
         await _supabase.from('reparaciones').update(data).eq('id_reparacion', widget.repairData!['id_reparacion']);

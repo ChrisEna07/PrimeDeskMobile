@@ -104,7 +104,7 @@ class _SupplierListScreenState extends State<SupplierListScreen> {
                       Text(s['nombreempresa'] ?? 'N/A', style: const TextStyle(color: Colors.white, fontSize: 14)),
                       const SizedBox(height: 8),
                       const Text('NIT', style: TextStyle(color: Color(0xFF00B2FF), fontSize: 12)),
-                      Text(s['nit'] ?? 'N/A', style: const TextStyle(color: Colors.white, fontSize: 14)),
+                      Text(s['documento'] ?? 'N/A', style: const TextStyle(color: Colors.white, fontSize: 14)),
                       const SizedBox(height: 8),
                       const Text('Especialidad', style: TextStyle(color: Color(0xFF00B2FF), fontSize: 12)),
                       Text(s['especialidad'] ?? 'N/A', style: const TextStyle(color: Colors.white, fontSize: 14)),
@@ -151,7 +151,7 @@ class _SupplierListScreenState extends State<SupplierListScreen> {
 
   Future<void> _showSupplierDialog({dynamic supplier}) async {
     final nombreCtrl = TextEditingController(text: supplier?['nombreempresa'] ?? '');
-    final nitCtrl = TextEditingController(text: supplier?['nit'] ?? '');
+    final nitCtrl = TextEditingController(text: supplier?['documento'] ?? '');
     final contactoCtrl = TextEditingController(text: supplier?['personacontacto'] ?? '');
     final especialidadCtrl = TextEditingController(text: supplier?['especialidad'] ?? '');
     final telCtrl = TextEditingController(text: supplier?['telefono'] ?? '');
@@ -235,7 +235,7 @@ class _SupplierListScreenState extends State<SupplierListScreen> {
               try {
                 final payload = {
                   'nombreempresa': nombreCtrl.text,
-                  'nit': nitCtrl.text,
+                  'documento': nitCtrl.text,
                   'personacontacto': contactoCtrl.text,
                   'especialidad': especialidadCtrl.text,
                   'telefono': telCtrl.text,

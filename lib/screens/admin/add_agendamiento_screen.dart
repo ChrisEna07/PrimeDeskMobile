@@ -114,7 +114,7 @@ class _AddAgendamientoScreenState extends State<AddAgendamientoScreen> {
     return FutureBuilder(
       future: _supabase
           .from('motocicletas')
-          .select('ID_Motocicleta, Placa, Modelo'),
+          .select('id_motocicleta, placa, modelo'),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const LinearProgressIndicator();
         final list = snapshot.data as List;
@@ -122,8 +122,8 @@ class _AddAgendamientoScreenState extends State<AddAgendamientoScreen> {
           items: list
               .map(
                 (m) => DropdownMenuItem(
-                  value: m['ID_Motocicleta'] as int,
-                  child: Text("${m['Placa']} - ${m['Modelo']}"),
+                  value: m['id_motocicleta'] as int,
+                  child: Text("${m['placa']} - ${m['modelo']}"),
                 ),
               )
               .toList(),
@@ -136,7 +136,7 @@ class _AddAgendamientoScreenState extends State<AddAgendamientoScreen> {
   Widget _buildEmpleadoDropdown() {
     return FutureBuilder(
       future:
-          _supabase.from('empleados').select('ID_Empleado, Nombre, Apellido'),
+          _supabase.from('empleados').select('id_empleado, nombre, apellido'),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const LinearProgressIndicator();
         final list = snapshot.data as List;
@@ -144,8 +144,8 @@ class _AddAgendamientoScreenState extends State<AddAgendamientoScreen> {
           items: list
               .map(
                 (e) => DropdownMenuItem(
-                  value: e['ID_Empleado'] as int,
-                  child: Text("${e['Nombre']} ${e['Apellido']}"),
+                  value: e['id_empleado'] as int,
+                  child: Text("${e['nombre']} ${e['apellido']}"),
                 ),
               )
               .toList(),

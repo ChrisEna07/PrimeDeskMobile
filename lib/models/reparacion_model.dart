@@ -3,27 +3,22 @@ class Reparacion {
   final int? idReparacion;
   final int idMotocicleta;
   final int idAgendamiento;
-  final DateTime? fecha;
   final String? observaciones;
-  final String tipoServicio; // 'Directo' por defecto en SQL
-  final String estado; // 'Activo' por defecto en SQL
+  final String estado;
 
   Reparacion({
     this.idReparacion,
     required this.idMotocicleta,
     required this.idAgendamiento,
-    this.fecha,
     this.observaciones,
-    this.tipoServicio = 'Directo',
-    this.estado = 'Activo',
+    this.estado = 'Pendiente',
   });
 
   Map<String, dynamic> toMap() => {
-    'ID_Motocicleta': idMotocicleta,
-    'ID_Agendamiento': idAgendamiento,
-    'Observaciones': observaciones,
-    'TipoServicio': tipoServicio,
-    'Estado': estado,
+    'id_motocicleta': idMotocicleta,
+    'id_agendamiento': idAgendamiento,
+    'observaciones': observaciones,
+    'estado': estado,
   };
 }
 
@@ -44,8 +39,8 @@ class ReparacionAvance {
   });
 
   Map<String, dynamic> toMap() => {
-    'ID_Reparacion': idReparacion,
-    'ID_Empleado': idEmpleado,
-    'Descripcion': descripcion,
+    'id_reparacion': idReparacion,
+    'id_empleado': idEmpleado,
+    'descripcion': descripcion,
   };
 }

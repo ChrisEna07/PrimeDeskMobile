@@ -3,8 +3,7 @@ import '../../models/transaccion_model.dart';
 import '../../data/repositories/facturacion_repository.dart';
 
 class CheckoutScreen extends StatefulWidget {
-  final Map<String, dynamic>
-  datosReparacion; // Trae ID_Reparacion, ID_Moto, ID_Empleado
+  final Map<String, dynamic> datosReparacion;
 
   const CheckoutScreen({super.key, required this.datosReparacion});
 
@@ -21,9 +20,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     if (_totalCtrl.text.isEmpty) return;
 
     final nuevaVenta = Venta(
-      idReparacion: widget.datosReparacion['ID_Reparacion'],
-      idEmpleado: widget.datosReparacion['ID_Empleado'],
-      idMotocicleta: widget.datosReparacion['ID_Motocicleta'],
+      idReparacion: widget.datosReparacion['id_reparacion'],
+      idEmpleado: widget.datosReparacion['id_empleado'],
+      idMotocicleta: widget.datosReparacion['id_motocicleta'],
       total: double.parse(_totalCtrl.text),
       observaciones: _obsCtrl.text,
     );
@@ -55,9 +54,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               color: Colors.blueGrey[50],
               child: ListTile(
                 title: Text(
-                  "Reparación #${widget.datosReparacion['ID_Reparacion']}",
+                  "Reparación #${widget.datosReparacion['id_reparacion']}",
                 ),
-                subtitle: Text("Moto: ${widget.datosReparacion['Placa']}"),
+                subtitle: Text("Moto: ${widget.datosReparacion['placa'] ?? ''}"),
               ),
             ),
             const SizedBox(height: 20),

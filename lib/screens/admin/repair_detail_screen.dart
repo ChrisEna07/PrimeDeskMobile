@@ -40,7 +40,7 @@ class RepairDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final moto = repair['motocicletas'];
-    final fecha = repair['fecha'] != null ? DateFormat('dd/MM/yyyy HH:mm').format(DateTime.parse(repair['fecha'])) : 'Desconocida';
+    final fecha = 'Reciente';
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F1113),
@@ -108,7 +108,7 @@ class RepairDetailScreen extends StatelessWidget {
                   const Text('Historial y Servicios', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                   const SizedBox(height: 24),
                   _buildDetailRow('Estado Actual', repair['estado']?.toString().toUpperCase() ?? 'PENDIENTE', isChip: true),
-                  _buildDetailRow('Servicios', repair['tiposervicio'] ?? 'Ninguno'),
+                  _buildDetailRow('Servicios', repair['observaciones'] ?? 'Ninguno'),
                   const SizedBox(height: 24),
                   const Divider(color: Colors.white10),
                   const SizedBox(height: 24),
