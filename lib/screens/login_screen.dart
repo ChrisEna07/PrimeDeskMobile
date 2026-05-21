@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import '../controllers/auth_controller.dart';
+import '../core/utils/dialog_helper.dart';
 import 'admin/admin_dashboard.dart';
 import 'cliente/client_dashboard.dart';
 import 'developer_screen.dart';
@@ -29,26 +31,33 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (success) {
         if (mounted) {
-          final user = auth.user;
-          if (user?.idRol == 3) {
-            Navigator.pushReplacement(
-                context, MaterialPageRoute(builder: (c) => const ClientDashboard()));
-          } else {
-            Navigator.pushReplacement(
-                context, MaterialPageRoute(builder: (c) => const AdminDashboard()));
+          await DialogHelper.showSuccess(context, message: 'Inicio de sesión exitoso');
+          if (mounted) {
+            final user = auth.user;
+            if (user?.idRol == 3) {
+              Navigator.pushReplacement(
+                  context, MaterialPageRoute(builder: (c) => const ClientDashboard()));
+            } else {
+              Navigator.pushReplacement(
+                  context, MaterialPageRoute(builder: (c) => const AdminDashboard()));
+            }
           }
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Acceso Denegado: Su rol no permite entrar al panel o no tiene perfil asignado.')),
+          DialogHelper.showError(
+            context,
+            title: 'Acceso Denegado',
+            message: 'Su rol no permite entrar al panel o no tiene perfil asignado.',
           );
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+        DialogHelper.showError(
+          context,
+          title: 'Error de Acceso',
+          message: e.toString(),
         );
       }
     } finally {
@@ -62,7 +71,22 @@ class _LoginScreenState extends State<LoginScreen> {
     final isDesktop = size.width > 900;
     final isTablet = size.width > 600 && size.width <= 900;
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final shouldExit = await DialogHelper.showConfirm(
+          context,
+          title: 'Salir',
+          message: '¿Seguro que quieres salir?',
+          confirmText: 'Salir',
+          cancelText: 'Cancelar',
+        );
+        if (shouldExit == true) {
+          await SystemNavigator.pop();
+        }
+      },
+      child: Scaffold(
       body: Row(
         children: [
           if (isDesktop || isTablet)
@@ -164,8 +188,9 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   int _devTapCount = 0;
   void _showDevPassPrompt() {

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../../controllers/auth_controller.dart';
+import '../../core/utils/dialog_helper.dart';
 
 class AgendamientoFormScreen extends StatefulWidget {
   final DateTime initialDate;
@@ -38,23 +41,43 @@ class _AgendamientoFormScreenState extends State<AgendamientoFormScreen> {
 
   Future<void> _fetchFormData() async {
     try {
-      final results = await Future.wait([
-        _supabase.from('usuarios').select().eq('id_rol', 2), // Mecánicos
-        _supabase.from('usuarios').select().eq('id_rol', 3), // Clientes
-        _supabase.from('servicios').select(),
-      ]);
+      final authCtrl = context.read<AuthController>();
+      final user = authCtrl.user;
 
-      setState(() {
-        _mecanicos = results[0];
-        _clientes = results[1];
-        _servicios = results[2];
-      });
+      if (user != null && user.idRol == 3) {
+        final results = await Future.wait([
+          _supabase.from('usuarios').select().eq('id_rol', 2), // Mecánicos
+          _supabase.from('servicios').select(),
+        ]);
+
+        setState(() {
+          _mecanicos = results[0];
+          _servicios = results[1];
+          _selectedCliente = user.idAsociado?.toString();
+        });
+
+        if (user.idAsociado != null) {
+          await _fetchMotos(user.idAsociado);
+        }
+      } else {
+        final results = await Future.wait([
+          _supabase.from('usuarios').select().eq('id_rol', 2), // Mecánicos
+          _supabase.from('clientes').select('id_cliente, nombre, apellido'), // Clientes
+          _supabase.from('servicios').select(),
+        ]);
+
+        setState(() {
+          _mecanicos = results[0];
+          _clientes = results[1];
+          _servicios = results[2];
+        });
+      }
     } catch (e) {
-      // Manejo de error silencioso o SnackBar
+      // Manejo de error silencioso
     }
   }
 
-  Future<void> _fetchMotos(String clienteId) async {
+  Future<void> _fetchMotos(dynamic clienteId) async {
     try {
       final response = await _supabase.from('motocicletas').select().eq('id_cliente', clienteId);
       setState(() {
@@ -65,8 +88,12 @@ class _AgendamientoFormScreenState extends State<AgendamientoFormScreen> {
   }
 
   Future<void> _saveAgendamiento() async {
-    if (!_formKey.currentState!.validate() || _selectedMoto == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Por favor completa todos los campos obligatorios.')));
+    if (!_formKey.currentState!.validate() || _selectedMoto == null || _selectedMecanico == null) {
+      await DialogHelper.showError(
+        context,
+        title: 'Campos Incompletos',
+        message: 'Por favor completa todos los campos obligatorios.',
+      );
       return;
     }
 
@@ -94,17 +121,26 @@ class _AgendamientoFormScreenState extends State<AgendamientoFormScreen> {
       });
 
       if (mounted) {
-        Navigator.pop(context, true);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Agendamiento y reparación creados con éxito.')));
+        await DialogHelper.showSuccess(context, message: 'Cita agendada correctamente.');
+        if (mounted) Navigator.pop(context, true);
       }
     } catch (e) {
       setState(() => _isSaving = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al guardar: $e')));
+      if (mounted) {
+        await DialogHelper.showError(
+          context,
+          title: 'Error al Guardar',
+          message: e.toString(),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final user = context.watch<AuthController>().user;
+    final isClient = user?.idRol == 3;
+
     return Scaffold(
       backgroundColor: const Color(0xFF0F1113),
       appBar: AppBar(
@@ -140,24 +176,56 @@ class _AgendamientoFormScreenState extends State<AgendamientoFormScreen> {
 
               const SizedBox(height: 24),
               _buildSectionTitle('Cliente *'),
-              _buildDropdown(
-                hint: 'Seleccionar cliente...',
-                value: _selectedCliente,
-                items: _clientes.map((c) => DropdownMenuItem(value: c['id_usuario'].toString(), child: Text('${c['nombre']} ${c['apellido']}'))).toList(),
-                onChanged: (val) {
-                  setState(() => _selectedCliente = val as String?);
-                  if (val != null) _fetchMotos(val);
-                },
-              ),
+              isClient
+                  ? _buildReadOnlyField(user?.nombreCompleto ?? 'Cliente', LucideIcons.user)
+                  : _buildDropdown(
+                      hint: 'Seleccionar cliente...',
+                      value: _selectedCliente,
+                      items: _clientes.map((c) => DropdownMenuItem(value: c['id_cliente'].toString(), child: Text('${c['nombre']} ${c['apellido']}'))).toList(),
+                      onChanged: (val) {
+                        setState(() => _selectedCliente = val as String?);
+                        if (val != null) _fetchMotos(val);
+                      },
+                    ),
 
               const SizedBox(height: 24),
               _buildSectionTitle('Motocicleta *'),
-              _buildDropdown(
-                hint: _selectedCliente == null ? 'Primero selecciona un cliente' : 'Seleccionar motocicleta...',
-                value: _selectedMoto?.toString(),
-                items: _motos.map((m) => DropdownMenuItem(value: m['id_motocicleta'].toString(), child: Text('${m['marca']} ${m['modelo']} (${m['placa']})'))).toList(),
-                onChanged: (val) => setState(() => _selectedMoto = int.tryParse(val as String)),
-              ),
+              _motos.isEmpty && !isClient && _selectedCliente == null
+                  ? _buildDropdown(
+                      hint: 'Primero selecciona un cliente',
+                      value: null,
+                      items: [],
+                      onChanged: (_) {},
+                    )
+                  : _motos.isEmpty
+                      ? Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.redAccent.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.redAccent.withOpacity(0.2)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(LucideIcons.alertTriangle, color: Colors.redAccent, size: 20),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  isClient 
+                                      ? 'No tienes motocicletas registradas. Por favor solicita al administrador registrar tu vehículo.' 
+                                      : 'Este cliente no tiene motocicletas registradas.',
+                                  style: const TextStyle(color: Colors.redAccent, fontSize: 13),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : _buildDropdown(
+                          hint: 'Seleccionar motocicleta...',
+                          value: _selectedMoto?.toString(),
+                          items: _motos.map((m) => DropdownMenuItem(value: m['id_motocicleta'].toString(), child: Text('${m['marca']} ${m['modelo']} (${m['placa']})'))).toList(),
+                          onChanged: (val) => setState(() => _selectedMoto = int.tryParse(val as String)),
+                        ),
 
               const SizedBox(height: 24),
               _buildSectionTitle('Servicios Sugeridos'),
@@ -214,7 +282,7 @@ class _AgendamientoFormScreenState extends State<AgendamientoFormScreen> {
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton(
-                  onPressed: _isSaving ? null : _saveAgendamiento,
+                  onPressed: (_isSaving || _motos.isEmpty) ? null : _saveAgendamiento,
                   style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF6B00), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                   child: _isSaving 
                     ? const CircularProgressIndicator(color: Colors.white) 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/landing_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
@@ -15,11 +16,13 @@ import 'controllers/auth_controller.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  await dotenv.load(fileName: ".env");
+  
   await initializeDateFormatting('es', null);
   
   await Supabase.initialize(
-    url: 'https://ynigfdldjybizqysmnaf.supabase.co',
-    anonKey: 'sb_publishable_1mSd8fQ2pRbUyKAjHqZzEw_pmstxGZ1',
+    url: dotenv.env['SUPABASE_URL'] ?? 'https://ynigfdldjybizqysmnaf.supabase.co',
+    anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? 'sb_publishable_1mSd8fQ2pRbUyKAjHqZzEw_pmstxGZ1',
   );
 
   runApp(

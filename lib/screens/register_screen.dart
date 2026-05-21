@@ -233,7 +233,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       children: [
         _buildInput('Contraseña *', _passwordController, icon: LucideIcons.lock, isPassword: true, obscureText: !_showPassword, 
           onToggle: () => setState(() => _showPassword = !_showPassword), 
-          validator: (v) => !RegExp(r'^(?=.*[A-Z])(?=.*\d).{8,}$').hasMatch(v!) ? '8+ chars, 1 Mayús, 1 Núm' : null),
+          validator: (v) => !RegExp(r'^(?=.*[A-Z])(?=.*\d)(?=.*[!@#\$&*~%^()_+\-=\[\]{}|;:",./<>?]).{8,}$').hasMatch(v!) 
+              ? 'Mín. 8 caracteres, 1 Mayús, 1 Núm y 1 Especial' 
+              : null),
         const SizedBox(height: 20),
         _buildInput('Confirmar contraseña *', _confirmPasswordController, icon: LucideIcons.shieldCheck, isPassword: true, obscureText: !_showConfirmPassword, 
           onToggle: () => setState(() => _showConfirmPassword = !_showConfirmPassword), 

@@ -3,6 +3,7 @@ class Usuario {
   final int idRol;
   final String correo;
   final bool estado;
+  final int? idAsociado; // Guarda id_cliente o id_empleado según corresponda
   
   // Datos del Empleado o Cliente asociado
   final String nombre;
@@ -18,6 +19,7 @@ class Usuario {
     required this.idRol,
     required this.correo,
     required this.estado,
+    this.idAsociado,
     required this.nombre,
     required this.apellido,
     this.documento,
@@ -34,6 +36,7 @@ class Usuario {
       idRol: map['id_rol'],
       correo: map['correo'],
       estado: map['estado'] ?? true,
+      idAsociado: profileMap['id_cliente'] ?? profileMap['id_empleado'],
       nombre: profileMap['nombre'] ?? profileMap['nombre_empleado'] ?? profileMap['nombre_cliente'] ?? '',
       apellido: profileMap['apellido'] ?? profileMap['apellido_empleado'] ?? profileMap['apellido_cliente'] ?? '',
       documento: profileMap['documento'] ?? profileMap['doc_empleado'] ?? profileMap['documento_cliente'],

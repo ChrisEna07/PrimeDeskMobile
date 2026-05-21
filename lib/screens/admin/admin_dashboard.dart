@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../responsive_layout.dart';
 import '../../controllers/auth_controller.dart';
+import '../../core/utils/dialog_helper.dart';
 
 // Screens
 import 'inventory_screen.dart';
@@ -85,36 +87,52 @@ class _AdminDashboardState extends State<AdminDashboard> {
     final auth = context.watch<AuthController>();
     final user = auth.user;
 
-    return ResponsiveLayout(
-      mobile: Scaffold(
-        drawer: _buildDrawer(user?.nombre ?? 'Admin'),
-        appBar: AppBar(
-          backgroundColor: const Color(0xFF0F1113),
-          title: Text(_menuItems[_selectedIndex]['title'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          actions: [
-            IconButton(
-              icon: const Icon(LucideIcons.bell, size: 20),
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationScreen())),
-            ),
-            InkWell(
-              onTap: () => setState(() => _selectedIndex = 1),
-              child: CircleAvatar(
-                radius: 14, 
-                backgroundColor: const Color(0xFFFF6B00), 
-                child: Text((user?.nombre ?? 'A').isNotEmpty ? (user?.nombre ?? 'A')[0].toUpperCase() : 'A', style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold))
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final shouldExit = await DialogHelper.showConfirm(
+          context,
+          title: 'Salir',
+          message: '¿Seguro que quieres salir?',
+          confirmText: 'Salir',
+          cancelText: 'Cancelar',
+        );
+        if (shouldExit == true) {
+          await SystemNavigator.pop();
+        }
+      },
+      child: ResponsiveLayout(
+        mobile: Scaffold(
+          drawer: _buildDrawer(user?.nombre ?? 'Admin'),
+          appBar: AppBar(
+            backgroundColor: const Color(0xFF0F1113),
+            title: Text(_menuItems[_selectedIndex]['title'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            actions: [
+              IconButton(
+                icon: const Icon(LucideIcons.bell, size: 20),
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationScreen())),
               ),
-            ),
-            const SizedBox(width: 12),
-          ],
+              InkWell(
+                onTap: () => setState(() => _selectedIndex = 1),
+                child: CircleAvatar(
+                  radius: 14, 
+                  backgroundColor: const Color(0xFFFF6B00), 
+                  child: Text((user?.nombre ?? 'A').isNotEmpty ? (user?.nombre ?? 'A')[0].toUpperCase() : 'A', style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold))
+                ),
+              ),
+              const SizedBox(width: 12),
+            ],
+          ),
+          body: IndexedStack(index: _selectedIndex, children: _screens!),
         ),
-        body: IndexedStack(index: _selectedIndex, children: _screens!),
-      ),
-      desktop: Scaffold(
-        body: Row(
-          children: [
-            Expanded(flex: 2, child: _buildSidebar(user?.nombre ?? 'Admin', user?.idRol == 1 ? 'Admin' : 'Empleado')),
-            Expanded(flex: 8, child: IndexedStack(index: _selectedIndex, children: _screens!)),
-          ],
+        desktop: Scaffold(
+          body: Row(
+            children: [
+              Expanded(flex: 2, child: _buildSidebar(user?.nombre ?? 'Admin', user?.idRol == 1 ? 'Admin' : 'Empleado')),
+              Expanded(flex: 8, child: IndexedStack(index: _selectedIndex, children: _screens!)),
+            ],
+          ),
         ),
       ),
     );
@@ -160,8 +178,20 @@ class _AdminDashboardState extends State<AdminDashboard> {
             dense: true, leading: const Icon(LucideIcons.logOut, color: Colors.redAccent, size: 18),
             title: const Text('Cerrar Sesión', style: TextStyle(color: Colors.redAccent, fontSize: 13)),
             onTap: () async {
-              await context.read<AuthController>().logout();
-              if (context.mounted) Navigator.of(context).pushReplacementNamed('/login');
+              final confirm = await DialogHelper.showConfirm(
+                context,
+                title: 'Cerrar Sesión',
+                message: '¿Seguro que quieres cerrar sesión?',
+                confirmText: 'Salir',
+                cancelText: 'Cancelar',
+              );
+              if (confirm == true && context.mounted) {
+                await context.read<AuthController>().logout();
+                if (context.mounted) {
+                  await DialogHelper.showSuccess(context, message: 'Cierre de sesión exitoso');
+                  if (context.mounted) Navigator.of(context).pushReplacementNamed('/login');
+                }
+              }
             },
           ),
           const SizedBox(height: 10),

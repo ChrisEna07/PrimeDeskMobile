@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../../responsive_layout.dart';
+import '../../controllers/auth_controller.dart';
+import '../../core/utils/dialog_helper.dart';
 import 'agendamiento_form_screen.dart';
 
 class AgendamentoListScreen extends StatefulWidget {
@@ -27,14 +30,27 @@ class _AgendamentoListScreenState extends State<AgendamentoListScreen> {
   Future<void> _fetchAgendamientos() async {
     setState(() => _isLoading = true);
     try {
-      final response = await _supabase
-          .from('agendamientos')
-          .select('''
-            *,
-            motocicletas (marca, modelo, placa),
-            empleados (nombre, apellido)
-          ''')
-          .order('dia', ascending: true);
+      final authCtrl = context.read<AuthController>();
+      final user = authCtrl.user;
+      
+      final query = _supabase.from('agendamientos');
+      dynamic response;
+      
+      if (user != null && user.idRol == 3) {
+        // Rol cliente: Filtrar solo agendamientos cuyas motos pertenezcan al cliente
+        response = await query.select('''
+          *,
+          motocicletas!inner (marca, modelo, placa, id_cliente),
+          empleados (nombre, apellido)
+        ''').eq('motocicletas.id_cliente', user.idAsociado!).order('dia', ascending: true);
+      } else {
+        // Administrador / Empleado: Ver todos
+        response = await query.select('''
+          *,
+          motocicletas (marca, modelo, placa),
+          empleados (nombre, apellido)
+        ''').order('dia', ascending: true);
+      }
       
       setState(() {
         _agendamientos = response;
@@ -55,6 +71,30 @@ class _AgendamentoListScreenState extends State<AgendamentoListScreen> {
       return aptDateTime.difference(DateTime.now()).inHours >= 1;
     } catch (_) {
       return false;
+    }
+  }
+
+  Future<void> _cancelAgendamiento(dynamic a) async {
+    final confirm = await DialogHelper.showConfirm(
+      context,
+      title: 'Cancelar Cita',
+      message: '¿Está seguro de que desea cancelar esta cita? Esta acción no se puede deshacer.',
+      confirmText: 'Confirmar',
+      cancelText: 'Volver',
+    );
+
+    if (confirm == true && mounted) {
+      try {
+        await _supabase.from('agendamientos').delete().eq('id_agendamiento', a['id_agendamiento']);
+        if (mounted) {
+          await DialogHelper.showSuccess(context, message: 'Cita cancelada correctamente.');
+          _fetchAgendamientos();
+        }
+      } catch (e) {
+        if (mounted) {
+          await DialogHelper.showError(context, title: 'Error', message: 'Error al cancelar: $e');
+        }
+      }
     }
   }
 
@@ -185,14 +225,16 @@ class _AgendamentoListScreenState extends State<AgendamentoListScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
+                    if (context.read<AuthController>().user?.idRol != 3) ...[
+                      TextButton.icon(
+                        onPressed: () {}, 
+                        icon: const Icon(LucideIcons.edit2, size: 14), 
+                        label: const Text('Editar', style: TextStyle(fontSize: 12)),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
                     TextButton.icon(
-                      onPressed: () {}, 
-                      icon: const Icon(LucideIcons.edit2, size: 14), 
-                      label: const Text('Editar', style: TextStyle(fontSize: 12)),
-                    ),
-                    const SizedBox(width: 8),
-                    TextButton.icon(
-                      onPressed: canDel ? () {} : null, 
+                      onPressed: canDel ? () => _cancelAgendamiento(a) : null, 
                       icon: const Icon(LucideIcons.trash2, size: 14), 
                       label: const Text('Cancelar', style: TextStyle(fontSize: 12)),
                       style: TextButton.styleFrom(foregroundColor: canDel ? Colors.redAccent : Colors.white10),
